@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enum to JSON Converter</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        /* Container for content */
+        .container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            margin: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(75, 45, 45, 0.1);
+        }
+
+        /* Left Column for Input */
+        .left-column {
+            width: 48%;
+        }
+
+        /* Right Column for JSON Output */
+        .right-column {
+            width: 48%;
+        }
+
+        /* Textarea and Button */
+        textarea {
+            width: 99%;
+            height: 40vh;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Output Section */
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        td {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover td {
+            background-color: #f1f1f1;
+        }
+
+        /* Input Preview Styles */
+        .input-preview {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f4f4f4;
+        }
+
+        /* Preview Section Styles */
+        .preview-section {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-preview {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f4f4f4;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+
+        /* Highlight colors for preview */
+        .highlight-description {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+
+        .highlight-enum {
+            color: #1976d2;
+            font-weight: bold;
+        }
+
+        /* Analysis table styles */
+        #analysisTable {
+            display: none; /* Hidden by default, shown only when there are entries */
+        }
+
+        #analysisTable.has-entries {
+            display: table;
+        }
+
+        /* Responsive Design */
+        @media screen and (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+                width: 90%;
+                padding: 10px;
+            }
+
+            .left-column, .right-column {
+                width: 100%;
+            }
+
+            textarea {
+                font-size: 14px;
+            }
+
+            button {
+                font-size: 14px;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            pre {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Column: Input and Analysis -->
+        <div class="left-column">
+            <h1>Convert C# Enum to JSON</h1>
+            <h3>User Input:</h3>
+            <textarea id="enumInput" placeholder="Paste your enum definition here..."></textarea>
+            <button id="convertButton">Convert Enum to JSON</button>
+            
+            <!-- Preview section below input -->
+            <div class="preview-section">
+                <h3>Input Preview & Highlights:</h3>
+                <div id="inputPreview" class="input-preview"></div>
+            </div>
+
+            <!-- Analysis table below preview -->
+            <h3>Enum Key Analysis:</h3>
+            <table id="analysisTable">
+                <thead>
+                    <tr>
+                        <th>Enum Name</th>
+                        <th>Count</th>
+                        <th>Same Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Analysis rows will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Right Column: JSON Output -->
+        <div class="right-column">
+            <h2>JSON Output:</h2>
+            <button id="copyButton">Copy JSON</button>
+            <pre id="output"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Function to convert C# enum definition to JSON format and check for duplicates with different descriptions
+        function convertEnumToJson(input) {
+            const enumJson = {};
+            const enumAnalysis = {};  // To store analysis data for each enum key
+
+            // Regular expression to match enum names and descriptions
+            const regex = /\[Description\("(.*?)"\)]\s*(\w+)/g;
+            let match;
+
+            // Loop through all matches in the input string
+            while ((match = regex.exec(input)) !== null) {
+                const description = match[1]; // The description inside the Description attribute
+                const enumName = match[2]; // The enum name (e.g., success)
+
+                // Add the enum name and description to the enumJson object
+                enumJson[enumName] = description.trim();
+
+                // Track the number of occurrences of each enum name
+                if (!enumAnalysis[enumName]) {
+                    enumAnalysis[enumName] = {
+                        count: 1,
+                        descriptions: [description]
+                    };
+                } else {
+                    enumAnalysis[enumName].count++;
+                    enumAnalysis[enumName].descriptions.push(description);
+                }
+            }
+
+            // Sorting the enumJson by keys (enum names)
+            const sortedEnumJson = {};
+            Object.keys(enumJson).sort().forEach(key => {
+                sortedEnumJson[key] = enumJson[key];
+            });
+
+            // Now we create the analysis section:
+            const analysis = [];
+            for (const enumName in enumAnalysis) {
+                const data = enumAnalysis[enumName];
+                if (data.count > 1) {  // Only show analysis data for keys with count > 1
+                    analysis.push({
+                        enumName: enumName,
+                        count: data.count,
+                        isSameDescription: data.descriptions.every(d => d === data.descriptions[0])
+                    });
+                }
+            }
+
+            // Return the formatted JSON string and the analysis data
+            return {
+                json: JSON.stringify(sortedEnumJson, null, 4),
+                analysis: analysis
+            };
+        }
+
+        // Event listener to trigger the conversion and display results
+        document.getElementById("convertButton").addEventListener("click", function() {
+            const enumInput = document.getElementById("enumInput").value;
+
+            if (enumInput.trim() === "") {
+                alert("Please enter a C# enum definition.");
+                return;
+            }
+
+            // Convert and update JSON output
+            const result = convertEnumToJson(enumInput);
+            document.getElementById("output").textContent = result.json;
+
+            // Update preview with highlighted text
+            updatePreview(enumInput);
+
+            // Update analysis table
+            updateAnalysisTable(result.analysis);
+        });
+
+        function updatePreview(input) {
+            const regex = /\[Description\("(.*?)"\)]\s*(\w+)/g;
+            const highlightedInput = input.replace(regex, function(match, description, enumName) {
+                return `[Description("<span class="highlight-description">${description}</span>")] <span class="highlight-enum">${enumName}</span>`;
+            });
+
+            const previewElement = document.getElementById("inputPreview");
+            previewElement.innerHTML = highlightedInput || 'No preview available';
+        }
+
+        function updateAnalysisTable(analysis) {
+            const tableBody = document.getElementById("analysisTable").getElementsByTagName('tbody')[0];
+            const table = document.getElementById("analysisTable");
+            
+            // Clear previous rows
+            tableBody.innerHTML = "";
+
+            // Only show table and add rows if there are entries with count > 1
+            if (analysis.length > 0) {
+                table.classList.add('has-entries');
+                
+                analysis.forEach(row => {
+                    const tr = document.createElement("tr");
+
+                    const tdEnumName = document.createElement("td");
+                    tdEnumName.textContent = row.enumName;
+                    tr.appendChild(tdEnumName);
+
+                    const tdCount = document.createElement("td");
+                    tdCount.textContent = row.count;
+                    tr.appendChild(tdCount);
+
+                    const tdSameDescription = document.createElement("td");
+                    tdSameDescription.textContent = row.isSameDescription ? "Yes" : "No";
+                    tdSameDescription.style.color = row.isSameDescription ? "#2e7d32" : "#d32f2f";
+                    tr.appendChild(tdSameDescription);
+
+                    tableBody.appendChild(tr);
+                });
+            } else {
+                table.classList.remove('has-entries');
+            }
+        }
+
+        // Function to copy JSON output to clipboard and change button text/color
+        document.getElementById("copyButton").addEventListener("click", function() {
+            const jsonOutput = document.getElementById("output").textContent;
+
+            // Create a temporary textarea to copy the JSON text
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = jsonOutput;
+            document.body.appendChild(tempTextArea);
+
+            // Select and copy the text
+            tempTextArea.select();
+            document.execCommand("copy");
+
+            // Remove the temporary textarea
+            document.body.removeChild(tempTextArea);
+
+            // Change the button text and color
+            const copyButton = document.getElementById("copyButton");
+            copyButton.textContent = "Copied!";
+            copyButton.style.backgroundColor = "#28a745"; // Change color to green
+
+            // Reset the button back to original state after a short delay
+            setTimeout(() => {
+                copyButton.textContent = "Copy JSON";
+                copyButton.style.backgroundColor = "#4CAF50"; // Reset to original color
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
