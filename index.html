@@ -36,6 +36,16 @@
             width: 48%;
         }
 
+        /* User Action Buttons */
+        #userActionButton{
+            display: flex;
+        }
+
+        #clearButton{
+            background-color: #1976d2;
+            margin-right: 10px;
+        }
+
         /* Right Column for JSON Output */
         .right-column {
             width: 48%;
@@ -162,6 +172,7 @@
                 align-items: center;
                 width: 90%;
                 padding: 10px;
+                margin: 10px;
             }
 
             .left-column, .right-column {
@@ -193,7 +204,11 @@
             <h1>Convert C# Enum to JSON</h1>
             <h3>User Input:</h3>
             <textarea id="enumInput" placeholder="Paste your enum definition here..."></textarea>
-            <button id="convertButton">Convert Enum to JSON</button>
+
+            <div id="userActionButton">
+                <button id="clearButton" onclick="clearTextarea()">Clear</button>
+                <button id="convertButton">Convert Enum to JSON</button>
+            </div>
             
             <!-- Preview section below input -->
             <div class="preview-section">
@@ -226,6 +241,11 @@
     </div>
 
     <script>
+        // Function to clear textarea
+        function clearTextarea() {
+            document.getElementById("enumInput").value = "";
+        }
+
         // Function to convert C# enum definition to JSON format and check for duplicates with different descriptions
         function convertEnumToJson(input) {
             const enumJson = {};
